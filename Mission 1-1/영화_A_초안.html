@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시네마 티어</title>
+<style>
+  :root {
+    --bg: #09080b;
+    --panel: #141218;
+    --panel-2: #1b1820;
+    --line: rgba(255, 255, 255, 0.07);
+    --line-2: rgba(255, 255, 255, 0.12);
+    --text: #f3ede4;
+    --muted: #9b93a1;
+    --faint: #6b6470;
+    --gold: #e8b25a;
+    --gold-soft: rgba(232, 178, 90, 0.16);
+    --velvet: #8e2433;
+    --radius: 14px;
+    --sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+    --serif: "Nanum Myeongjo", "AppleMyungjo", "Batang", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    font-family: var(--sans);
+    color: var(--text);
+    background:
+      radial-gradient(1100px 520px at 50% -12%, rgba(232, 178, 90, 0.13), transparent 62%),
+      radial-gradient(700px 420px at 0% 105%, rgba(142, 36, 51, 0.20), transparent 70%),
+      radial-gradient(700px 420px at 100% 105%, rgba(142, 36, 51, 0.14), transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    z-index: 0;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  .shell { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 32px 64px; }
+
+  /* ---------- 상단 ---------- */
+  .top {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+    padding: 44px 0 28px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.28em; color: var(--gold);
+  }
+  .eyebrow::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold); box-shadow: 0 0 12px var(--gold);
+  }
+  h1 {
+    margin: 10px 0 8px;
+    font-family: var(--serif); font-weight: 800; font-size: 44px; letter-spacing: -0.02em;
+    text-shadow: 0 0 40px rgba(232, 178, 90, 0.25);
+  }
+  .lead { margin: 0; color: var(--muted); font-size: 15px; }
+  .tabs {
+    display: flex; gap: 4px; padding: 4px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  }
+  .tab {
+    border: 0; background: transparent; cursor: pointer;
+    padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted);
+    display: inline-flex; align-items: center; gap: 8px; transition: color .2s, background .2s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected="true"] { background: var(--panel-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .count {
+    min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+    background: var(--gold-soft); color: var(--gold); font-size: 12px; display: inline-grid; place-items: center;
+  }
+
+  /* ---------- 만들기 화면 ---------- */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: start; }
+  .board {
+    background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01));
+    border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+  }
+  .tier-row { display: grid; grid-template-columns: 112px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+  .tier-row:last-child { border-bottom: 0; }
+  .tier-label {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    padding: 16px 8px; position: relative;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 16%, transparent), transparent);
+    border-right: 1px solid var(--line);
+  }
+  .tier-label::before {
+    content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0;
+    background: var(--tc); box-shadow: 0 0 14px var(--tc);
+  }
+  .tier-letter {
+    font-family: var(--serif); font-size: 40px; font-weight: 800; line-height: 1; color: var(--tc);
+    text-shadow: 0 0 22px color-mix(in srgb, var(--tc) 55%, transparent);
+  }
+  .tier-desc { font-size: 11.5px; color: var(--muted); text-align: center; }
+
+  .zone {
+    min-height: 178px; padding: 14px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 12px;
+    transition: background .15s, box-shadow .15s;
+  }
+  .zone:empty::before {
+    content: "여기에 영화를 놓으세요";
+    margin: auto; color: var(--faint); font-size: 13px; align-self: center;
+  }
+  .zone.over { background: rgba(232, 178, 90, 0.07); box-shadow: inset 0 0 0 2px rgba(232, 178, 90, 0.45); }
+
+  .pool-wrap {
+    margin-top: 20px; border: 1px dashed var(--line-2); border-radius: 18px;
+    background: rgba(255,255,255,0.015);
+  }
+  .pool-head { display: flex; align-items: baseline; gap: 12px; padding: 16px 18px 0; flex-wrap: wrap; }
+  .pool-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+  .pool-head span { color: var(--muted); font-size: 13px; }
+  .zone.pool { min-height: 150px; }
+  .zone.pool:empty::before { content: "모든 영화에 등급을 매겼어요"; }
+
+  /* ---------- 영화 카드 ---------- */
+  .card {
+    position: relative; width: 112px; height: 152px; flex: none;
+    border-radius: 10px; overflow: hidden; cursor: grab; user-select: none;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.09);
+    transition: transform .18s ease, box-shadow .18s ease;
+    outline: none;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 16px 30px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18); }
+  .card:focus-visible, .card.active { box-shadow: 0 0 0 2px var(--gold), 0 16px 30px rgba(0,0,0,0.55); }
+  .card.dragging { opacity: 0.35; transform: scale(0.96); }
+  .card::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(120px 80px at 30% 0%, rgba(255,255,255,0.18), transparent 70%);
+    pointer-events: none;
+  }
+  .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .card-text {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 10px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.78));
+  }
+  .card-title {
+    font-size: 13.5px; font-weight: 700; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    word-break: keep-all; overflow-wrap: anywhere;
+  }
+  .card-year { margin-top: 3px; font-size: 11.5px; color: rgba(243, 237, 228, 0.65); font-variant-numeric: tabular-nums; }
+  .card-mark {
+    position: absolute; top: 9px; left: 10px; font-family: var(--serif); font-size: 26px; font-weight: 800;
+    color: rgba(255,255,255,0.16); line-height: 1;
+  }
+  .card.has-img .card-mark { display: none; }
+
+  /* ---------- 사이드 패널 ---------- */
+  .side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .panel h3 { margin: 0 0 4px; font-size: 15px; }
+  .panel .sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .field label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .input {
+    width: 100%; padding: 11px 13px; border-radius: 10px; font-size: 14px;
+    background: #0e0d11; border: 1px solid var(--line-2); outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .input::placeholder { color: var(--faint); }
+  .input:focus { border-color: rgba(232,178,90,0.6); box-shadow: 0 0 0 3px rgba(232,178,90,0.12); }
+  .row2 { display: grid; grid-template-columns: 1fr 96px; gap: 8px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+    border: 1px solid var(--line-2); background: var(--panel-2); transition: background .15s, border-color .15s, transform .1s;
+  }
+  .btn:hover { background: #24202a; border-color: rgba(255,255,255,0.2); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary {
+    background: linear-gradient(180deg, #f0c06e, #d99a3c); color: #1a1206; border-color: transparent;
+    box-shadow: 0 8px 22px rgba(232, 178, 90, 0.25);
+  }
+  .btn.primary:hover { background: linear-gradient(180deg, #f5ca7e, #e0a44a); }
+  .btn.ghost { background: transparent; color: var(--muted); font-weight: 600; }
+  .btn.ghost:hover { color: var(--text); }
+  .btn + .btn { margin-top: 8px; }
+  .btn.inline { width: auto; }
+
+  .file-pick {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer;
+    border: 1px dashed var(--line-2); color: var(--muted); font-size: 13px; transition: border-color .15s, color .15s;
+  }
+  .file-pick:hover { border-color: rgba(232,178,90,0.5); color: var(--text); }
+  .file-pick input { display: none; }
+  .file-pick .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .status { margin-top: 10px; font-size: 12.5px; color: var(--muted); min-height: 1em; }
+  .status b { color: var(--gold); font-weight: 600; }
+
+  .steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 10px; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 13px; color: var(--muted); line-height: 1.55; }
+  .steps li::before {
+    content: counter(s); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--gold-soft); color: var(--gold); font-size: 12px; font-weight: 700;
+  }
+  .steps b { color: var(--text); font-weight: 600; }
+
+  /* ---------- 팝오버 ---------- */
+  .popover {
+    position: fixed; z-index: 50; width: 252px; padding: 14px;
+    background: rgba(24, 21, 29, 0.97); backdrop-filter: blur(10px);
+    border: 1px solid var(--line-2); border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    animation: pop .14s ease-out;
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .pop-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; overflow-wrap: anywhere; }
+  .pop-sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .pop-label { font-size: 11.5px; color: var(--faint); font-weight: 700; letter-spacing: 0.06em; margin: 4px 0 8px; }
+  .tier-btns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 6px; }
+  .tier-btn {
+    padding: 9px 0; border-radius: 9px; cursor: pointer; font-family: var(--serif); font-weight: 800; font-size: 17px;
+    border: 1px solid color-mix(in srgb, var(--tc) 40%, transparent);
+    background: color-mix(in srgb, var(--tc) 12%, transparent); color: var(--tc); transition: background .12s;
+  }
+  .tier-btn:hover { background: color-mix(in srgb, var(--tc) 26%, transparent); }
+  .tier-btn.current { background: var(--tc); color: #140f0a; }
+  .pool-btn {
+    width: 100%; padding: 8px; border-radius: 9px; cursor: pointer; font-size: 12.5px; font-weight: 600;
+    background: transparent; border: 1px solid var(--line-2); color: var(--muted); margin-bottom: 12px;
+  }
+  .pool-btn:hover, .pool-btn.current { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .pop-actions { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .pop-action {
+    text-align: left; padding: 9px 10px; border-radius: 8px; border: 0; background: transparent; cursor: pointer; font-size: 13.5px;
+  }
+  .pop-action:hover { background: rgba(255,255,255,0.06); }
+  .pop-action.danger { color: #e98493; }
+
+  /* ---------- 비교 화면 ---------- */
+  .cmp-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .cmp-bar h2 { margin: 0 0 4px; font-size: 22px; font-family: var(--serif); }
+  .cmp-bar p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .cmp-tools { display: flex; gap: 8px; align-items: center; }
+  select.input { width: auto; padding-right: 32px; cursor: pointer; }
+
+  .highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .hl {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px;
+    position: relative; overflow: hidden;
+  }
+  .hl::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--hc, var(--gold)); }
+  .hl-k { font-size: 11.5px; letter-spacing: 0.08em; font-weight: 700; color: var(--hc, var(--gold)); }
+  .hl-v { font-size: 17px; font-weight: 700; margin: 6px 0 2px; overflow-wrap: anywhere; }
+  .hl-s { font-size: 12.5px; color: var(--muted); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+  th, td { padding: 12px 16px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: rgba(255,255,255,0.02); }
+  thead th { font-size: 12.5px; color: var(--muted); font-weight: 600; background: var(--panel-2); position: sticky; top: 0; }
+  th.movie-col, td.movie-col { text-align: left; position: sticky; left: 0; background: var(--panel); z-index: 1; min-width: 240px; }
+  thead th.movie-col { background: var(--panel-2); z-index: 2; }
+  .person { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+  .person-name { color: var(--text); font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+  .person-name .me { font-size: 10.5px; padding: 1px 6px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); }
+  .person-date { font-size: 11px; color: var(--faint); font-weight: 500; }
+  .del-person {
+    border: 0; background: transparent; color: var(--faint); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; border-radius: 6px;
+  }
+  .del-person:hover { color: #e98493; background: rgba(233,132,147,0.1); }
+  .mv { display: flex; align-items: center; gap: 12px; }
+  .thumb {
+    width: 34px; height: 46px; border-radius: 6px; flex: none; overflow: hidden; position: relative;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mv-title { font-weight: 700; white-space: normal; overflow-wrap: anywhere; }
+  .mv-year { font-size: 12px; color: var(--muted); }
+  .badge {
+    display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
+    font-family: var(--serif); font-weight: 800; font-size: 17px;
+    background: color-mix(in srgb, var(--tc) 18%, transparent); color: var(--tc);
+    border: 1px solid color-mix(in srgb, var(--tc) 40%, transparent);
+  }
+  .na { color: var(--faint); font-size: 12.5px; }
+  .avg { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .avg small { display: block; font-size: 11px; color: var(--muted); font-weight: 500; }
+
+  .empty {
+    text-align: center; padding: 64px 24px; border: 1px dashed var(--line-2); border-radius: 18px; color: var(--muted);
+  }
+  .empty .big { font-family: var(--serif); font-size: 22px; color: var(--text); margin-bottom: 8px; }
+  .hint { margin-top: 14px; font-size: 13px; color: var(--muted); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+    background: #201c26; border: 1px solid var(--line-2); padding: 12px 18px; border-radius: 12px; font-size: 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5); transition: opacity .2s, transform .2s; z-index: 60; max-width: calc(100vw - 32px);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.err { border-color: rgba(233,132,147,0.5); }
+
+  footer { margin-top: 40px; color: var(--faint); font-size: 12.5px; text-align: center; line-height: 1.6; }
+  [hidden] { display: none !important; }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .side { position: static; }
+    .top { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 600px) {
+    .shell { padding: 0 16px 48px; }
+    h1 { font-size: 34px; }
+    .tier-row { grid-template-columns: 72px minmax(0,1fr); }
+    .tier-letter { font-size: 30px; }
+    .tier-desc { display: none; }
+    .card { width: 92px; height: 126px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div>
+      <span class="eyebrow">NOW SHOWING · 상영 중</span>
+      <h1>시네마 티어</h1>
+      <p class="lead">보고 온 영화에 등급을 매기고, 친구들 취향과 나란히 놓아 보세요.</p>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="화면 전환">
+      <button class="tab" role="tab" id="tab-make" aria-selected="true" aria-controls="view-make">내 티어리스트</button>
+      <button class="tab" role="tab" id="tab-compare" aria-selected="false" aria-controls="view-compare">함께 비교 <span class="count" id="peopleCount">0</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 만들기 -->
+    <section id="view-make" role="tabpanel" aria-labelledby="tab-make">
+      <div class="layout">
+        <div>
+          <div class="board" id="board"></div>
+          <div class="pool-wrap">
+            <div class="pool-head">
+              <h2>대기석</h2>
+              <span>아직 등급을 정하지 않은 영화예요. 끌어다 놓거나 카드를 눌러 옮기세요.</span>
+            </div>
+            <div class="zone pool" data-tier="pool" id="zone-pool"></div>
+          </div>
+        </div>
+
+        <aside class="side">
+          <div class="panel">
+            <h3>내 결과 저장</h3>
+            <p class="sub">이름을 적고 저장하면 ‘함께 비교’ 표에 들어가요. 같은 이름으로 다시 저장하면 새 결과로 바뀌어요.</p>
+            <div class="field">
+              <label for="nameInput">이름</label>
+              <input class="input" id="nameInput" maxlength="20" placeholder="이름을 적어 주세요" autocomplete="off">
+            </div>
+            <button class="btn primary" id="saveBtn" type="button">저장하기</button>
+            <button class="btn" id="exportBtn" type="button">결과 파일 내보내기</button>
+            <div class="status" id="saveStatus"></div>
+          </div>
+
+          <div class="panel">
+            <h3>영화 추가</h3>
+            <p class="sub">추가한 영화는 대기석에 놓여요.</p>
+            <form id="addForm" autocomplete="off">
+              <div class="row2">
+                <div class="field">
+                  <label for="addTitle">제목</label>
+                  <input class="input" id="addTitle" maxlength="40" placeholder="영화 제목" required>
+                </div>
+                <div class="field">
+                  <label for="addYear">개봉 연도</label>
+                  <input class="input" id="addYear" inputmode="numeric" maxlength="4" placeholder="2024">
+                </div>
+              </div>
+              <div class="field">
+                <label class="file-pick">
+                  <input type="file" id="addImage" accept="image/*">
+                  <span aria-hidden="true">🖼</span>
+                  <span class="fname" id="addImageName">카드 이미지 고르기 (선택)</span>
+                </label>
+              </div>
+              <button class="btn" type="submit">대기석에 추가</button>
+            </form>
+          </div>
+
+          <div class="panel">
+            <h3>친구와 비교하는 법</h3>
+            <ol class="steps">
+              <li><span>이 HTML 파일을 친구에게 보내요. 친구도 자기 컴퓨터에서 열어 티어리스트를 만들어요.</span></li>
+              <li><span>각자 <b>저장하기</b> 후 <b>결과 파일 내보내기</b>로 받은 파일을 서로 보내요.</span></li>
+              <li><span><b>함께 비교</b> 탭에서 받은 파일을 불러오면 영화별 표에 나란히 나와요.</span></li>
+            </ol>
+          </div>
+
+          <button class="btn ghost" id="resetBtn" type="button">기본 영화 8편으로 처음부터 다시</button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 비교 -->
+    <section id="view-compare" role="tabpanel" aria-labelledby="tab-compare" hidden>
+      <div class="cmp-bar">
+        <div>
+          <h2>영화별 비교표</h2>
+          <p>영화 한 줄에 사람마다 준 등급이 나와요. 누구 목록에 없는 영화는 ‘—’로 표시돼요.</p>
+        </div>
+        <div class="cmp-tools">
+          <select class="input" id="sortSel" aria-label="정렬">
+            <option value="avg">평균 등급 높은 순</option>
+            <option value="split">의견이 많이 갈린 순</option>
+            <option value="title">제목 순</option>
+          </select>
+          <button class="btn primary inline" id="importBtn" type="button">결과 파일 불러오기</button>
+          <input type="file" id="importInput" accept=".json,application/json" multiple hidden>
+        </div>
+      </div>
+      <div class="highlights" id="highlights"></div>
+      <div id="compareArea"></div>
+    </section>
+  </main>
+
+  <footer>
+    작업과 결과는 이 브라우저에만 저장돼요. 서버로 전송되는 정보는 없어요.<br>
+    다른 브라우저나 기기에서는 결과 파일을 불러와야 보여요.
+  </footer>
+</div>
+
+<div id="popover" class="popover" hidden role="dialog" aria-modal="false"></div>
+<input type="file" id="imgInput" accept="image/*" hidden>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- 기본 값 ---------- */
+  const TIERS = [
+    { k: 'A', desc: '인생 영화',     color: '#e8b25a', score: 5 },
+    { k: 'B', desc: '꼭 볼 만해요',  color: '#df8a52', score: 4 },
+    { k: 'C', desc: '무난해요',      color: '#5fb0a6', score: 3 },
+    { k: 'D', desc: '아쉬워요',      color: '#8d88cc', score: 2 },
+    { k: 'F', desc: '다시는 안 봐요', color: '#cf5a6c', score: 1 },
+  ];
+  const TIER_MAP = Object.fromEntries(TIERS.map(t => [t.k, t]));
+  const PALETTE = [
+    ['#3b1622', '#842f45'], ['#14243a', '#2f5f8a'], ['#2e2913', '#86702c'], ['#11302a', '#2c7f6a'],
+    ['#25173a', '#5e3b94'], ['#3a2412', '#94582a'], ['#161b30', '#3c4f96'], ['#2f1414', '#93402f'],
+  ];
+  const DEFAULT_MOVIES = [
+    ['기생충', '2019'], ['인터스텔라', '2014'], ['라라랜드', '2016'], ['센과 치히로의 행방불명', '2001'],
+    ['어벤져스: 엔드게임', '2019'], ['범죄도시', '2017'], ['타이타닉', '1997'], ['토이 스토리', '1995'],
+  ];
+  const KEY_DRAFT = 'cinetier.draft.v1';
+  const KEY_RESULTS = 'cinetier.results.v1';
+  const MAX_UPLOAD = 15 * 1024 * 1024;
+
+  /* ---------- 도우미 ---------- */
+  const $ = sel => document.querySelector(sel);
+  function h(tag, attrs = {}, children = []) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+    [].concat(children).forEach(c => {
+      if (c == null || c === false) return;
+      el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+    });
+    return el;
+  }
+  const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const norm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
+  const movieKey = (title, year) => norm(title) + '|' + (year || '');
+  function hashColor(str) {
+    let x = 0; for (const ch of String(str)) x = (x * 31 + ch.charCodeAt(0)) >>> 0;
+    return x % PALETTE.length;
+  }
+  const gradient = i => {
+    const p = PALETTE[((i % PALETTE.length) + PALETTE.length) % PALETTE.length];
+    return `background: linear-gradient(155deg, ${p[1]} 0%, ${p[0]} 70%, #0c0a0e 100%);`;
+  };
+  const isTier = t => t === 'pool' || !!TIER_MAP[t];
+  const isImage = s => typeof s === 'string' && /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s);
+  function fmtDate(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  let toastTimer;
+  function toast(msg, isErr = false) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.toggle('err', isErr);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  /* ---------- 저장소 ---------- */
+  function readJSON(key) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; }
+  }
+  function writeJSON(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch (e) {
+      toast('브라우저 저장 공간이 부족해요. 큰 이미지를 지운 뒤 다시 시도해 주세요.', true);
+      return false;
+    }
+  }
+
+  function defaultDraft(name = '') {
+    return {
+      name,
+      movies: DEFAULT_MOVIES.map(([title, year], i) => ({ id: 'd' + i, title, year, color: i, image: null, tier: 'pool' })),
+    };
+  }
+  function loadDraft() {
+    const d = readJSON(KEY_DRAFT);
+    if (!d || !Array.isArray(d.movies)) return defaultDraft();
+    d.name = typeof d.name === 'string' ? d.name.slice(0, 20) : '';
+    d.movies = d.movies.filter(m => m && typeof m.title === 'string').map(m => ({
+      id: typeof m.id === 'string' ? m.id : uid(),
+      title: m.title.slice(0, 40),
+      year: /^\d{4}$/.test(m.year) ? m.year : '',
+      color: Number.isInteger(m.color) ? m.color : hashColor(m.title),
+      image: isImage(m.image) ? m.image : null,
+      tier: isTier(m.tier) ? m.tier : 'pool',
+    }));
+    return d;
+  }
+  const saveDraft = () => writeJSON(KEY_DRAFT, state);
+
+  function loadResults() {
+    const r = readJSON(KEY_RESULTS);
+    return r && typeof r === 'object' && !Array.isArray(r) ? r : {};
+  }
+  const saveResults = () => writeJSON(KEY_RESULTS, results);
+
+  let state = loadDraft();
+  let results = loadResults();
+
+  /* ---------- 보드 그리기 ---------- */
+  const board = $('#board');
+  const zones = {};
+  TIERS.forEach(t => {
+    const zone = h('div', { class: 'zone', 'data-tier': t.k, 'aria-label': `${t.k} 등급 영역` });
+    const row = h('div', { class: 'tier-row', style: `--tc:${t.color}` }, [
+      h('div', { class: 'tier-label' }, [
+        h('div', { class: 'tier-letter', text: t.k }),
+        h('div', { class: 'tier-desc', text: t.desc }),
+      ]),
+      zone,
+    ]);
+    board.append(row);
+    zones[t.k] = zone;
+  });
+  zones.pool = $('#zone-pool');
+
+  function cardEl(m) {
+    const c = h('div', {
+      class: 'card' + (m.image ? ' has-img' : ''),
+      style: gradient(m.color),
+      draggable: 'true',
+      tabindex: '0',
+      role: 'button',
+      'data-id': m.id,
+      'aria-label': `${m.title}${m.year ? ` (${m.year}년)` : ''}. 눌러서 등급 옮기기`,
+    }, [
+      m.image ? h('img', { src: m.image, alt: '' }) : null,
+      h('div', { class: 'card-mark', text: m.title.charAt(0) }),
+      h('div', { class: 'card-text' }, [
+        h('div', { class: 'card-title', text: m.title }),
+        m.year ? h('div', { class: 'card-year', text: m.year + '년' }) : null,
+      ]),
+    ]);
+    c.addEventListener('dragstart', e => {
+      closePopover();
+      e.dataTransfer.setData('text/plain', m.id);
+      e.dataTransfer.effectAllowed = 'move';
+      requestAnimationFrame(() => c.classList.add('dragging'));
+    });
+    c.addEventListener('dragend', () => c.classList.remove('dragging'));
+    c.addEventListener('click', e => { e.stopPropagation(); togglePopover(m.id, c); });
+    c.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePopover(m.id, c); }
+    });
+    return c;
+  }
+
+  function renderBoard() {
+    Object.values(zones).forEach(z => z.replaceChildren());
+    state.movies.forEach(m => zones[m.tier]?.append(cardEl(m)));
+    $('#nameInput').value = state.name;
+    renderSaveStatus();
+  }
+
+  function renderSaveStatus() {
+    const s = $('#saveStatus');
+    const rec = state.name && results[state.name];
+    s.replaceChildren();
+    if (rec) s.append('마지막 저장 ', h('b', { text: fmtDate(rec.savedAt) }));
+    else s.textContent = state.name ? '아직 이 이름으로 저장하지 않았어요.' : '';
+  }
+
+  /* ---------- 드래그 앤 드롭 ---------- */
+  Object.entries(zones).forEach(([tier, zone]) => {
+    zone.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; zone.classList.add('over'); });
+    zone.addEventListener('dragleave', e => { if (!zone.contains(e.relatedTarget)) zone.classList.remove('over'); });
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('over');
+      const id = e.dataTransfer.getData('text/plain');
+      moveMovie(id, tier);
+    });
+  });
+
+  function moveMovie(id, tier) {
+    const m = state.movies.find(x => x.id === id);
+    if (!m || !isTier(tier) || m.tier === tier) return;
+    m.tier = tier;
+    // 옮긴 영화를 그 칸 끝으로 보냄
+    state.movies = state.movies.filter(x => x !== m).concat(m);
+    saveDraft();
+    renderBoard();
+  }
+
+  /* ---------- 클릭 메뉴 ---------- */
+  const pop = $('#popover');
+  let popFor = null;
+  let imageTarget = null;
+
+  function togglePopover(id, anchor) {
+    if (popFor === id && !pop.hidden) { closePopover(); return; }
+    openPopover(id, anchor);
+  }
+  function closePopover() {
+    pop.hidden = true;
+    popFor = null;
+    document.querySelectorAll('.card.active').forEach(c => c.classList.remove('active'));
+  }
+  function openPopover(id, anchor) {
+    const m = state.movies.find(x => x.id === id);
+    if (!m) return;
+    closePopover();
+    popFor = id;
+    anchor.classList.add('active');
+
+    const tierBtns = h('div', { class: 'tier-btns' }, TIERS.map(t =>
+      h('button', {
+        type: 'button', class: 'tier-btn' + (m.tier === t.k ? ' current' : ''), style: `--tc:${t.color}`,
+        text: t.k, 'aria-label': `${t.k} 등급으로 옮기기`,
+        onclick: () => { closePopover(); moveMovie(id, t.k); },
+      })
+    ));
+    pop.replaceChildren(
+      h('div', { class: 'pop-title', text: m.title }),
+      h('div', { class: 'pop-sub', text: m.year ? `${m.year}년 개봉` : '개봉 연도 없음' }),
+      h('div', { class: 'pop-label', text: '등급으로 옮기기' }),
+      tierBtns,
+      h('button', {
+        type: 'button', class: 'pool-btn' + (m.tier === 'pool' ? ' current' : ''), text: '대기석으로 보내기',
+        onclick: () => { closePopover(); moveMovie(id, 'pool'); },
+      }),
+      h('div', { class: 'pop-actions' }, [
+        h('button', {
+          type: 'button', class: 'pop-action', text: m.image ? '이미지 바꾸기' : '이미지 올리기',
+          onclick: () => { imageTarget = id; closePopover(); $('#imgInput').value = ''; $('#imgInput').click(); },
+        }),
+        m.image ? h('button', {
+          type: 'button', class: 'pop-action', text: '이미지 지우기',
+          onclick: () => { m.image = null; closePopover(); saveDraft(); renderBoard(); toast('이미지를 지웠어요.'); },
+        }) : null,
+        h('button', {
+          type: 'button', class: 'pop-action danger', text: '이 영화 빼기',
+          onclick: () => {
+            closePopover();
+            if (!confirm(`‘${m.title}’을(를) 내 목록에서 뺄까요?`)) return;
+            state.movies = state.movies.filter(x => x.id !== id);
+            saveDraft(); renderBoard(); toast(`‘${m.title}’을(를) 뺐어요.`);
+          },
+        }),
+      ])
+    );
+    pop.hidden = false;
+
+    const r = anchor.getBoundingClientRect();
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    let top = r.bottom + 8;
+    if (top + ph > innerHeight - 8) top = Math.max(8, r.top - ph - 8);
+    let left = r.left + r.width / 2 - pw / 2;
+    left = Math.min(Math.max(8, left), innerWidth - pw - 8);
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+    pop.querySelector('.tier-btn')?.focus({ preventScroll: true });
+  }
+  document.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target)) closePopover(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopover(); });
+  window.addEventListener('scroll', closePopover, { passive: true });
+  window.addEventListener('resize', closePopover);
+
+  /* ---------- 이미지 처리 ---------- */
+  function resizeImage(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !/^image\//.test(file.type)) return reject(new Error('이미지 파일만 올릴 수 있어요.'));
+      if (file.size > MAX_UPLOAD) return reject(new Error('15MB보다 작은 이미지를 골라 주세요.'));
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 320, maxH = 440;
+        const scale = Math.min(1, maxW / img.width, maxH / img.height);
+        const w = Math.max(1, Math.round(img.width * scale));
+        const hgt = Math.max(1, Math.round(img.height * scale));
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = hgt;
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = '#0c0a0e';
+        ctx.fillRect(0, 0, w, hgt);
+        ctx.drawImage(img, 0, 0, w, hgt);
+        URL.revokeObjectURL(url);
+        resolve(cv.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지를 읽지 못했어요.')); };
+      img.src = url;
+    });
+  }
+
+  $('#imgInput').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    const m = state.movies.find(x => x.id === imageTarget);
+    imageTarget = null;
+    if (!file || !m) return;
+    try {
+      const prev = m.image;
+      m.image = await resizeImage(file);
+      if (!saveDraft()) { m.image = prev; return; }
+      renderBoard();
+      toast(`‘${m.title}’ 카드에 이미지를 올렸어요.`);
+    } catch (err) { toast(err.message, true); }
+  });
+
+  /* ---------- 영화 추가 ---------- */
+  let pendingAddImage = null;
+  $('#addImage').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    const label = $('#addImageName');
+    pendingAddImage = null;
+    if (!file) { label.textContent = '카드 이미지 고르기 (선택)'; return; }
+    try {
+      pendingAddImage = await resizeImage(file);
+      label.textContent = file.name;
+    } catch (err) {
+      e.target.value = '';
+      label.textContent = '카드 이미지 고르기 (선택)';
+      toast(err.message, true);
+    }
+  });
+
+  $('#addForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const title = $('#addTitle').value.trim().replace(/\s+/g, ' ');
+    const year = $('#addYear').value.trim();
+    if (!title) { toast('영화 제목을 적어 주세요.', true); return; }
+    if (year && !/^(18|19|20|21)\d{2}$/.test(year)) { toast('개봉 연도는 숫자 네 자리로 적어 주세요.', true); return; }
+    if (state.movies.some(m => movieKey(m.title, m.year) === movieKey(title, year))) {
+      toast('이미 목록에 있는 영화예요.', true); return;
+    }
+    const m = { id: uid(), title, year, color: hashColor(title), image: pendingAddImage, tier: 'pool' };
+    state.movies.push(m);
+    if (!saveDraft()) { state.movies.pop(); return; }
+    e.target.reset();
+    pendingAddImage = null;
+    $('#addImageName').textContent = '카드 이미지 고르기 (선택)';
+    renderBoard();
+    toast(`‘${title}’을(를) 대기석에 추가했어요.`);
+  });
+
+  /* ---------- 이름 · 저장 · 내보내기 ---------- */
+  $('#nameInput').addEventListener('input', e => {
+    state.name = e.target.value.trim().slice(0, 20);
+    saveDraft();
+    renderSaveStatus();
+  });
+
+  function snapshot() {
+    return {
+      app: 'cinetier', version: 1, name: state.name, savedAt: new Date().toISOString(),
+      items: state.movies.map(m => ({
+        title: m.title, year: m.year, color: m.color, image: m.image,
+        tier: m.tier === 'pool' ? null : m.tier,
+      })),
+    };
+  }
+  function requireName() {
+    if (state.name) return true;
+    toast('먼저 이름을 적어 주세요.', true);
+    $('#nameInput').focus();
+    return false;
+  }
+
+  $('#saveBtn').addEventListener('click', () => {
+    if (!requireName()) return;
+    const existed = !!results[state.name];
+    const prev = results[state.name];
+    results[state.name] = snapshot();
+    if (!saveResults()) { if (prev) results[state.name] = prev; else delete results[state.name]; return; }
+    renderSaveStatus();
+    updateCount();
+    const unranked = state.movies.filter(m => m.tier === 'pool').length;
+    toast(`‘${state.name}’ 이름으로 ${existed ? '새로 덮어써서 ' : ''}저장했어요.` + (unranked ? ` (대기석 ${unranked}편은 ‘미정’으로 나와요)` : ''));
+  });
+
+  $('#exportBtn').addEventListener('click', () => {
+    if (!requireName()) return;
+    const data = snapshot();
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const a = h('a', { href: URL.createObjectURL(blob), download: `시네마티어_${state.name}.json` });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('결과 파일을 내려받았어요. 친구에게 보내 주세요.');
+  });
+
+  $('#resetBtn').addEventListener('click', () => {
+    if (!confirm('추가한 영화와 등급, 이미지가 모두 지워지고 기본 8편으로 돌아가요. 계속할까요?\n(이미 저장한 결과는 그대로 남아요)')) return;
+    state = defaultDraft(state.name);
+    saveDraft();
+    renderBoard();
+    toast('처음 상태로 돌아갔어요.');
+  });
+
+  /* ---------- 결과 불러오기 ---------- */
+  function sanitizeResult(obj) {
+    if (!obj || obj.app !== 'cinetier' || !Array.isArray(obj.items)) return null;
+    const name = typeof obj.name === 'string' ? obj.name.trim().slice(0, 20) : '';
+    if (!name) return null;
+    const items = obj.items.slice(0, 300).filter(it => it && typeof it.title === 'string' && it.title.trim()).map(it => ({
+      title: it.title.trim().slice(0, 40),
+      year: /^\d{4}$/.test(it.year) ? it.year : '',
+      color: Number.isInteger(it.color) ? it.color : hashColor(it.title),
+      image: isImage(it.image) ? it.image : null,
+      tier: TIER_MAP[it.tier] ? it.tier : null,
+    }));
+    const savedAt = isNaN(new Date(obj.savedAt)) ? new Date().toISOString() : obj.savedAt;
+    return { app: 'cinetier', version: 1, name, savedAt, items };
+  }
+
+  $('#importBtn').addEventListener('click', () => { $('#importInput').value = ''; $('#importInput').click(); });
+  $('#importInput').addEventListener('change', async e => {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    const backup = JSON.stringify(results);
+    const added = [], failed = [];
+    for (const f of files) {
+      try {
+        if (f.size > 20 * 1024 * 1024) throw new Error();
+        const r = sanitizeResult(JSON.parse(await f.text()));
+        if (!r) throw new Error();
+        results[r.name] = r;
+        added.push(r.name);
+      } catch { failed.push(f.name); }
+    }
+    if (added.length && !saveResults()) { results = JSON.parse(backup); return; }
+    updateCount();
+    renderCompare();
+    if (added.length) toast(`${added.join(', ')} 님의 결과를 불러왔어요.` + (failed.length ? ` (${failed.length}개는 읽지 못했어요)` : ''));
+    else toast('시네마 티어 결과 파일이 아니에요.', true);
+  });
+
+  /* ---------- 비교 화면 ---------- */
+  function buildRows(people) {
+    const map = new Map();
+    people.forEach(p => {
+      p.items.forEach(it => {
+        const key = movieKey(it.title, it.year);
+        if (!map.has(key)) map.set(key, { title: it.title, year: it.year, color: it.color, image: null, tiers: {} });
+        const row = map.get(key);
+        if (!row.image && it.image) row.image = it.image;
+        row.tiers[p.name] = it.tier;
+      });
+    });
+    return [...map.values()].map(r => {
+      const scores = Object.values(r.tiers).filter(Boolean).map(t => TIER_MAP[t].score);
+      r.count = scores.length;
+      r.avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      r.spread = scores.length >= 2 ? Math.max(...scores) - Math.min(...scores) : 0;
+      return r;
+    });
+  }
+  const scoreToTier = s => TIERS.slice().sort((a, b) => Math.abs(a.score - s) - Math.abs(b.score - s))[0].k;
+
+  function renderCompare() {
+    const area = $('#compareArea');
+    const hl = $('#highlights');
+    area.replaceChildren();
+    hl.replaceChildren();
+    const people = Object.values(results).sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
+
+    if (!people.length) {
+      area.append(h('div', { class: 'empty' }, [
+        h('div', { class: 'big', text: '아직 상영 중인 결과가 없어요' }),
+        h('div', { text: '‘내 티어리스트’에서 이름을 적고 저장하거나, 친구에게 받은 결과 파일을 불러와 주세요.' }),
+      ]));
+      return;
+    }
+
+    let rows = buildRows(people);
+    const sort = $('#sortSel').value;
+    const byTitle = (a, b) => a.title.localeCompare(b.title, 'ko');
+    if (sort === 'avg') rows.sort((a, b) => (b.avg ?? -1) - (a.avg ?? -1) || byTitle(a, b));
+    else if (sort === 'split') rows.sort((a, b) => b.spread - a.spread || (b.avg ?? -1) - (a.avg ?? -1) || byTitle(a, b));
+    else rows.sort(byTitle);
+
+    // 이야기거리
+    if (people.length >= 2) {
+      const multi = rows.filter(r => r.count >= 2);
+      const loved = multi.slice().sort((a, b) => b.avg - a.avg || b.count - a.count)[0];
+      const split = multi.slice().sort((a, b) => b.spread - a.spread)[0];
+      const allA = multi.filter(r => r.count === people.length && Object.values(r.tiers).every(t => t === 'A'));
+      if (loved) hl.append(highlight('가장 사랑받은 영화', loved.title, `평균 ${scoreToTier(loved.avg)} 등급 · ${loved.count}명 평가`, TIER_MAP.A.color));
+      if (split && split.spread >= 2) {
+        const ts = Object.entries(split.tiers).filter(([, t]) => t).map(([n, t]) => `${n} ${t}`).join(' · ');
+        hl.append(highlight('의견이 가장 갈린 영화', split.title, ts, TIER_MAP.F.color));
+      }
+      hl.append(allA.length
+        ? highlight('모두가 A를 준 영화', allA.map(r => r.title).join(', '), `${people.length}명 전원 일치`, TIER_MAP.C.color)
+        : highlight('함께 본 사람', `${people.length}명`, people.map(p => p.name).join(', '), TIER_MAP.C.color));
+    }
+
+    const thead = h('thead', {}, h('tr', {}, [
+      h('th', { class: 'movie-col', text: `영화 ${rows.length}편` }),
+      ...people.map(p => h('th', {}, h('div', { class: 'person' }, [
+        h('span', { class: 'person-name' }, [
+          p.name,
+          p.name === state.name ? h('span', { class: 'me', text: '나' }) : null,
+          h('button', {
+            type: 'button', class: 'del-person', title: `${p.name} 님 결과 지우기`, 'aria-label': `${p.name} 님 결과 지우기`, text: '×',
+            onclick: () => {
+              if (!confirm(`‘${p.name}’ 님의 결과를 비교표에서 지울까요?`)) return;
+              delete results[p.name];
+              saveResults(); updateCount(); renderCompare(); renderSaveStatus();
+              toast(`‘${p.name}’ 님의 결과를 지웠어요.`);
+            },
+          }),
+        ]),
+        h('span', { class: 'person-date', text: fmtDate(p.savedAt) }),
+      ]))),
+      h('th', { text: '평균' }),
+    ]));
+
+    const tbody = h('tbody', {}, rows.map(r => h('tr', {}, [
+      h('td', { class: 'movie-col' }, h('div', { class: 'mv' }, [
+        h('div', { class: 'thumb', style: gradient(r.color) }, r.image ? h('img', { src: r.image, alt: '' }) : null),
+        h('div', {}, [
+          h('div', { class: 'mv-title', text: r.title }),
+          r.year ? h('div', { class: 'mv-year', text: r.year + '년' }) : null,
+        ]),
+      ])),
+      ...people.map(p => {
+        const t = r.tiers[p.name];
+        if (t === undefined) return h('td', {}, h('span', { class: 'na', title: '이 사람 목록에 없는 영화', text: '—' }));
+        if (t === null) return h('td', {}, h('span', { class: 'na', text: '미정' }));
+        return h('td', {}, h('span', { class: 'badge', style: `--tc:${TIER_MAP[t].color}`, text: t }));
+      }),
+      h('td', {}, r.avg == null
+        ? h('span', { class: 'na', text: '—' })
+        : h('div', { class: 'avg' }, [scoreToTier(r.avg), h('small', { text: `${r.avg.toFixed(1)}점 · ${r.count}명` })])),
+    ])));
+
+    area.append(h('div', { class: 'table-wrap' }, h('table', {}, [thead, tbody])));
+    if (people.length === 1) {
+      area.append(h('p', { class: 'hint', text: '친구의 결과 파일을 불러오면 옆에 나란히 비교돼요. (평균 점수: A 5점 ~ F 1점)' }));
+    }
+  }
+  function highlight(k, v, s, color) {
+    return h('div', { class: 'hl', style: `--hc:${color}` }, [
+      h('div', { class: 'hl-k', text: k }),
+      h('div', { class: 'hl-v', text: v }),
+      h('div', { class: 'hl-s', text: s }),
+    ]);
+  }
+  $('#sortSel').addEventListener('change', renderCompare);
+
+  function updateCount() { $('#peopleCount').textContent = Object.keys(results).length; }
+
+  /* ---------- 탭 ---------- */
+  function showTab(which) {
+    closePopover();
+    const make = which === 'make';
+    $('#tab-make').setAttribute('aria-selected', make);
+    $('#tab-compare').setAttribute('aria-selected', !make);
+    $('#view-make').hidden = !make;
+    $('#view-compare').hidden = make;
+    if (!make) renderCompare();
+  }
+  $('#tab-make').addEventListener('click', () => showTab('make'));
+  $('#tab-compare').addEventListener('click', () => showTab('compare'));
+
+  // 다른 탭에서 바뀐 내용 반영
+  window.addEventListener('storage', e => {
+    if (e.key === KEY_RESULTS) { results = loadResults(); updateCount(); if (!$('#view-compare').hidden) renderCompare(); }
+    if (e.key === KEY_DRAFT) { state = loadDraft(); renderBoard(); }
+  });
+
+  renderBoard();
+  updateCount();
+})();
+</script>
+</body>
+</html>
